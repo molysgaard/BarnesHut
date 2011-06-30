@@ -1,0 +1,20 @@
+Barnes & Hut orbital simulator in Haskell
+
+Made by Morten Olsen Lysgaard
+
+You need:
+* ghc
+* ffmpeg
+* imagemagik
+
+to build, run: ghc --make Main.hs
+
+After that you can open simulate.sh and edit it for your location.
+Then run simulate.sh.
+
+The binary, Main creates a series of SVG files displaying the planets.
+Then, a imagemagik, ffmpeg magic turns it intoo a video.
+
+This was created because I was bored during a flu/fever in my summer vacation 2011.
+
+Have fun!

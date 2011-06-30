@@ -1,5 +1,8 @@
 module BarnesHut where
 
+-- Barnes & Hut orbital simulator by Morten Olsen Lysgaard
+-- mortenlysgaard.com
+
 import Data.List (foldl', (\\))
 import System.Random
 

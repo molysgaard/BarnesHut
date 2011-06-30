@@ -1,5 +1,8 @@
 module Main where
 
+-- Barnes & Hut orbital simulator by Morten Olsen Lysgaard
+-- mortenlysgaard.com
+
 import BarnesHut as O
 import Text.Printf
 
