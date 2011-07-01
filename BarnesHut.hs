@@ -6,6 +6,8 @@ module BarnesHut where
 import Data.List (foldl', (\\))
 import System.Random
 
+--import Control.Parallel.Strategies
+
 data Vec = Vec Double Double deriving (Eq, Show)
 
 vx (Vec x _) = x
@@ -91,9 +93,10 @@ randPlanet = do
                    spd = Vec xs ys
                    origin = Vec 150 150
                    d = diff p origin
-                   spinn = scale (unitify $ spn p origin d) 1
+                   l = len d
+                   spinn = scale (unitify $ spn p origin d) (sqrt l * 0.1)
                m <- randomRIO (1,5)
-               return Object {pos = (Vec x y), speed=spinn, mass=m }
+               return Object {pos = (Vec x y), speed=spd `add` spinn, mass=m }
 
 spn p origin v
  | vx origin < vx p = Vec ((- vy v) / (vx v)) 1
@@ -259,7 +262,7 @@ distanceDivider = 10
 
 distance a b = distance' (pos a) (pos b)
 
-distance' a b = (sqrt $ (vx diff)^2 + (vy diff)^2) / distanceDivider
+distance' a b = len diff / distanceDivider
   where diff = a `sub` b
 
 calcR :: Object -> Double
@@ -268,10 +271,11 @@ calcR o = (sqrt ((mass o) / pi)) / distanceDivider
 insertIn :: Tree Object -> Object -> Tree Object
 insertIn (Empty bb) o = Leaf bb o
 insertIn t@(Branch bb cm a b c d) o
-  | quad bb o == 1 = Branch bb (newCm (o : obs t)) (insertIn a o) b c d
-  | quad bb o == 2 = Branch bb (newCm (o : obs t)) a (insertIn b o) c d
-  | quad bb o == 3 = Branch bb (newCm (o : obs t)) a b (insertIn c o) d
+  | q == 1 = Branch bb (newCm (o : obs t)) (insertIn a o) b c d
+  | q == 2 = Branch bb (newCm (o : obs t)) a (insertIn b o) c d
+  | q == 3 = Branch bb (newCm (o : obs t)) a b (insertIn c o) d
   | otherwise      = Branch bb (newCm (o : obs t)) a b c (insertIn d o)
+  where q = quad bb o
 insertIn t@(Leaf bb a) o = insertIn (insertIn (Branch bb (Vec 0 0, Vec 0 0,0) (Empty (firstQuad bb)) (Empty (secondQuad bb)) (Empty (thirdQuad bb)) (Empty (fourthQuad bb))) a) o
 
 newCm :: [Object] -> (Vec, Vec, Double)
