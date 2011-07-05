@@ -31,8 +31,8 @@ drawObject o = preservingMatrix $ do
                  renderObject Solid $ Sphere' radius 6 2
     where
       (Vec x1 y1) = O.pos o
-      x = (x1 - 150) * 2
-      y = (y1 - 150) * 2
+      x = (x1 - 150) * 3
+      y = (y1 - 150) * 3
       radius = realToFrac (calcR o * distanceDivider * 2)
 
 colorByMass :: Double -> Color4 Double

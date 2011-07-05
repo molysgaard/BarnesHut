@@ -48,7 +48,7 @@ writeFrame frame bbs os = writeFile ("frame"++(printf "%04d" frame)++".svg") $ h
 
 treeToBbs (Empty _) = []
 treeToBbs (Leaf bb _) = [bb]
-treeToBbs (Branch _ _ a b c d) = (treeToBbs a) ++ (treeToBbs b) ++ (treeToBbs c) ++ (treeToBbs d)
+treeToBbs (Branch _ _ os) = concat $ map treeToBbs os
 
 main = do
        init <- O.randPlanets

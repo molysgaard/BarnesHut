@@ -3,10 +3,10 @@
 shopt -s nullglob
 
 echo "Compiling"
-ghc --make Main.hs
+ghc -threaded -O2 -funbox-strict-fields --make Main.hs
 
 echo "Running"
-./Main
+./Main +RTS -N4 -RTS
 
 #convert to PNG
 SVGS=*.svg

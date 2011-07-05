@@ -15,14 +15,14 @@ vy (Vec _ y) = y
 
 type BB = (Vec, Vec)
 
-data Tree a = Branch BB (Vec,Vec,Double) (Tree a) (Tree a) (Tree a) (Tree a) | Leaf BB a | Empty BB deriving (Show, Eq)
+data Tree a = Branch BB (Vec,Vec,Double) [Tree a] | Leaf BB a | Empty BB deriving (Show, Eq)
 
 obs (Empty _) = []
 obs (Leaf _ a) = [a]
-obs (Branch _ (p,s,m) _ _ _ _) = [Object { pos = p, speed=s, mass = m }]
+obs (Branch _ (p,s,m) _) = [Object { pos = p, speed=s, mass = m }]
 
 firstLevelObjects :: Tree Object -> [Object]
-firstLevelObjects (Branch _ _ a b c d) = concatMap obs [a,b,c,d]
+firstLevelObjects (Branch _ _ os) = concatMap obs os
 
 data Object = Object { pos :: Vec
                      , speed :: Vec
@@ -140,9 +140,9 @@ forceOn (Leaf _ a) o
   | a /= o = forceBetween (pos o) (mass o) (pos a) (mass a)
   | otherwise = Vec 0 0
 forceOn (Empty _) _ = Vec 0 0
-forceOn (Branch bb (p,_,m) a b c d) o
+forceOn (Branch bb (p,_,m) os) o
   | (width bb * height bb)/((distance' p (pos o))^2) < 0.5 = forceBetween (pos o) (mass o) p m
-  | otherwise = (forceOn a o) `add` (forceOn b o) `add` (forceOn c o) `add` (forceOn d o)
+  | otherwise = vsum $ map (flip forceOn $ o) os
 
 forceBetween :: Vec -> Double -> Vec -> Double -> Vec
 forceBetween p1 m1 p2 m2 = scale dir force
@@ -193,7 +193,7 @@ col o (Empty _) = []
 col o (Leaf bb a)
   | distance o a < (calcR o + calcR a) * (3/4) = [a]
   | otherwise = []
-col o (Branch bb (p,s,m) a b c d) = concat $ map (ifThenIf (objIsctNode o) (col o)) [a,b,c,d]
+col o (Branch bb (p,s,m) os) = concat $ map (ifThenIf (objIsctNode o) (col o)) os
 
 ifThenIf :: (a -> Bool) -> (a -> [b]) -> a -> [b]
 ifThenIf p f a
@@ -202,7 +202,7 @@ ifThenIf p f a
 
 objIsctNode o (Empty bb) = objIsctBB bb o
 objIsctNode o (Leaf bb _) = objIsctBB bb o
-objIsctNode o (Branch bb _ _ _ _ _) = objIsctBB bb o
+objIsctNode o (Branch bb _ _) = objIsctBB bb o
 
 objIsctBB :: BB -> Object -> Bool
 objIsctBB bb@(nw, se) o
@@ -232,7 +232,7 @@ checkCollide xs a = [ b | b <- xs , distance a b < calcR a + calcR b]
 treeLeafs :: Tree a -> [a]
 treeLeafs (Empty _) = []
 treeLeafs (Leaf _ o) = [o]
-treeLeafs (Branch _ _ a b c d) = (treeLeafs a) ++ (treeLeafs b) ++ (treeLeafs c) ++ (treeLeafs d)
+treeLeafs (Branch _ _ os) = concat $ map treeLeafs os
 
 -- the minimal are that maximum four bodies can be in
 collisionThreshold = 100
@@ -270,13 +270,13 @@ calcR o = (sqrt ((mass o) / pi)) / distanceDivider
 
 insertIn :: Tree Object -> Object -> Tree Object
 insertIn (Empty bb) o = Leaf bb o
-insertIn t@(Branch bb cm a b c d) o
-  | q == 1 = Branch bb (newCm (o : obs t)) (insertIn a o) b c d
-  | q == 2 = Branch bb (newCm (o : obs t)) a (insertIn b o) c d
-  | q == 3 = Branch bb (newCm (o : obs t)) a b (insertIn c o) d
-  | otherwise      = Branch bb (newCm (o : obs t)) a b c (insertIn d o)
+insertIn t@(Branch bb cm [a,b,c,d]) o
+  | q == 1 = Branch bb (newCm (o : obs t)) [(insertIn a o),b,c,d]
+  | q == 2 = Branch bb (newCm (o : obs t)) [a,(insertIn b o),c,d]
+  | q == 3 = Branch bb (newCm (o : obs t)) [a,b,(insertIn c o),d]
+  | otherwise      = Branch bb (newCm (o : obs t)) [a,b,c,(insertIn d o)]
   where q = quad bb o
-insertIn t@(Leaf bb a) o = insertIn (insertIn (Branch bb (Vec 0 0, Vec 0 0,0) (Empty (firstQuad bb)) (Empty (secondQuad bb)) (Empty (thirdQuad bb)) (Empty (fourthQuad bb))) a) o
+insertIn t@(Leaf bb a) o = insertIn (insertIn (Branch bb (Vec 0 0, Vec 0 0,0) [(Empty (firstQuad bb)),(Empty (secondQuad bb)),(Empty (thirdQuad bb)),(Empty (fourthQuad bb))]) a) o
 
 newCm :: [Object] -> (Vec, Vec, Double)
 newCm list = ( Vec (sum (zipWith (\a b -> (vx a) * b) poses masses)/smass) (sum (zipWith (\a b -> (vy a) * b) poses masses)/smass)
